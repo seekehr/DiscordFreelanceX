@@ -1,0 +1,8 @@
+bot:
+  message: "DM me for your freelancing projects!"
+
+servers:
+  - guild_id: ""
+    channel_ids:
+      - ""
+    
