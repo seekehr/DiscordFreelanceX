@@ -18,6 +18,7 @@ const (
 )
 
 // SendMessages sends cfg.Bot.Message to every configured channel across all guilds.
+// Forum channels get a new thread (post) using cfg.Bot.ForumTitle as the title.
 // It respects a 6-hour cooldown stored as a Unix timestamp in resources/last_msg.txt,
 // waits if needed, then sends with a 5-second interval between channels.
 // Returns the total number of messages successfully sent.
@@ -37,8 +38,19 @@ func SendMessages(s *discordgo.Session, cfg *internal.Config) int {
 				time.Sleep(channelInterval)
 			}
 
-			channelName := utils.GetChannelNameFromID(s, channelID)
-			_, err := s.ChannelMessageSend(channelID, cfg.Bot.Message)
+			ch, err := s.Channel(channelID)
+			if err != nil {
+				fmt.Printf("  Failed to fetch channel %s: %v\n", channelID, err)
+				continue
+			}
+
+			channelName := "#" + ch.Name
+			if ch.Type == discordgo.ChannelTypeGuildForum {
+				err = sendForumPost(s, channelID, cfg)
+			} else {
+				_, err = s.ChannelMessageSend(channelID, cfg.Bot.Message)
+			}
+
 			if err != nil {
 				fmt.Printf("  Failed to send in %s / %s: %v\n", guildName, channelName, err)
 				continue
@@ -60,6 +72,15 @@ func SendMessages(s *discordgo.Session, cfg *internal.Config) int {
 	return sent
 }
 
+func sendForumPost(s *discordgo.Session, channelID string, cfg *internal.Config) error {
+	title := cfg.Bot.ForumTitle
+	if title == "" {
+		title = "New Post"
+	}
+	_, err := s.ForumThreadStart(channelID, title, 1440, cfg.Bot.Message)
+	return err
+}
+
 // waitForCooldown reads the last-sent timestamp from disk and blocks until
 // the 6-hour cooldown has elapsed. If the file is missing or unparseable
 // the cooldown is considered expired.
@@ -79,7 +100,7 @@ func waitForCooldown() {
 	remaining := (cooldownHours * time.Hour) - elapsed
 
 	if remaining > 0 {
-		fmt.Printf("Cooldown active — waiting %s before sending messages\n", remaining.Round(time.Second))
+		fmt.Printf("Cooldown active -- waiting %s before sending messages\n", remaining.Round(time.Second))
 		time.Sleep(remaining)
 	}
 }
