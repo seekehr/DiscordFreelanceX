@@ -67,6 +67,8 @@ func initialiseDiscord(cfg *internal.Config, token string, rt *widget.RichText) 
 			return
 		}
 		gui.AppendAnalysisEntries(rt, entries)
+		gui.AppendAnalysisText(rt, "====================NEW MESSAGES====================")
+		tasks.AcceptNewMessages(s, cfg, rt)
 	})
 
 	if err := discord.Open(); err != nil {

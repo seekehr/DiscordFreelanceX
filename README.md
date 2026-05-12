@@ -7,6 +7,7 @@ A lightweight Discord tool built in Go that helps freelancers stay on top of job
 ## Features
 
 - **Multi-server message scanning** -- Fetches and displays the most recent messages from any number of guilds and channels, sorted newest-first.
+- **Accept new messages and immediately links to them** -- Displays any new messages instantly with a notification so you are never late to applying for a job.
 - **Rich embed parsing** -- Reads Discord embeds (job boards, bot posts, etc.) and extracts the useful bits: title, description, compensation, stack, and more.
 - **One-click message links** -- Every fetched message includes a clickable "Go to message" link that takes you straight to the original post in Discord.
 - **Auto-send with cooldown** -- Broadcasts your custom message to all configured channels with a built-in 6-hour cooldown so you don't spam.
