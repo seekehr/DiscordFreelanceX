@@ -39,7 +39,7 @@ func (t *forcedDarkTheme) Size(name fyne.ThemeSizeName) float32 {
 
 // CreateApp initialises a new Fyne application with the forced dark theme.
 func CreateApp() fyne.App {
-	a := app.New()
+	a := app.NewWithID("com.seekehr.discordfreelancex")
 	a.Settings().SetTheme(&forcedDarkTheme{})
 	return a
 }
