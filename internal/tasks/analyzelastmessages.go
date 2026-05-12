@@ -2,44 +2,65 @@ package tasks
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/seekehr/DiscordFreelanceX/internal"
+	"github.com/seekehr/DiscordFreelanceX/internal/utils"
 )
 
-func AnalyzeLastMessages(numberofmessages int, s *discordgo.Session, cfg *internal.Config) (string, error) {
-	var sb strings.Builder
+func AnalyzeLastMessages(numberofmessages int, s *discordgo.Session, cfg *internal.Config) ([]internal.AnalysisEntry, error) {
+	var entries []internal.AnalysisEntry
 
-	for _, server := range cfg.Servers {
-		sb.WriteString(fmt.Sprintf("Processing guild: %s\n", server.GuildID))
+	for i, server := range cfg.Servers {
+		if i > 0 {
+			entries = append(entries, internal.AnalysisEntry{
+				Text: "============================",
+			})
+		}
 
-		for _, channelID := range server.ChannelIDs {
+		guildName := utils.GetGuildNameFromID(s, server.GuildID)
+		entries = append(entries, internal.AnalysisEntry{
+			Text: fmt.Sprintf("Processing guild: %s", guildName),
+		})
+
+		for j, channelID := range server.ChannelIDs {
+			if j > 0 {
+				entries = append(entries, internal.AnalysisEntry{
+					Text: "-----------------------------------------------",
+				})
+			}
+
+			channelName := utils.GetChannelNameFromID(s, channelID)
 			messages, err := s.ChannelMessages(channelID, numberofmessages, "", "", "")
 			if err != nil {
-				sb.WriteString(fmt.Sprintf("  Failed to read channel %s: %v\n", channelID, err))
+				entries = append(entries, internal.AnalysisEntry{
+					Text: fmt.Sprintf("Failed to read channel %s: %v", channelName, err),
+				})
 				continue
 			}
 
-			sb.WriteString(fmt.Sprintf("  Channel %s: fetched %d messages\n", channelID, len(messages)))
+			entries = append(entries, internal.AnalysisEntry{
+				Text: fmt.Sprintf("%s: fetched %d messages", channelName, len(messages)),
+			})
 			for _, msg := range messages {
 				content := msg.Content
 				if content == "" {
 					switch {
 					case len(msg.Embeds) > 0:
-						content = fmt.Sprintf("[embed: %s]", ParseEmbed(msg.Embeds[0]))
-					case len(msg.Attachments) > 0:
-						content = fmt.Sprintf("[attachment: %s]", msg.Attachments[0].Filename)
-					case len(msg.StickerItems) > 0:
-						content = fmt.Sprintf("[sticker: %s]", msg.StickerItems[0].Name)
+						content = fmt.Sprintf("%s", ParseEmbed(msg.Embeds[0]))
 					default:
 						content = "[no text content]"
 					}
 				}
-				sb.WriteString(fmt.Sprintf("    [%s] %s: %s\n", msg.Timestamp, msg.Author.Username, content))
+
+				messageURL := fmt.Sprintf("https://discord.com/channels/%s/%s/%s", server.GuildID, channelID, msg.ID)
+				entries = append(entries, internal.AnalysisEntry{
+					Text:       fmt.Sprintf("[%s] %s: %s", msg.Author.Username, content),
+					MessageURL: messageURL,
+				})
 			}
 		}
 	}
 
-	return sb.String(), nil
+	return entries, nil
 }

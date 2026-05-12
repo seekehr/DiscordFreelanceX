@@ -22,6 +22,11 @@ type ServerConfig struct {
 	ChannelIDs []string `yaml:"channel_ids"`
 }
 
+type AnalysisEntry struct {
+	Text       string
+	MessageURL string
+}
+
 func LoadConfig(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

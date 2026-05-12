@@ -24,9 +24,9 @@ func main() {
 	token := initaliseEnv()
 
 	guiApp := gui.CreateApp()
-	window, entry := gui.CreateAnalysisWindow(guiApp)
+	window, rt := gui.CreateAnalysisWindow(guiApp)
 
-	go initialiseDiscord(cfg, token, entry)
+	go initialiseDiscord(cfg, token, rt)
 
 	window.ShowAndRun()
 }
@@ -44,10 +44,10 @@ func initaliseEnv() string {
 	return token
 }
 
-func initialiseDiscord(cfg *internal.Config, token string, entry *widget.Entry) {
+func initialiseDiscord(cfg *internal.Config, token string, rt *widget.RichText) {
 	discord, err := discordgo.New(token)
 	if err != nil {
-		gui.AppendAnalysisText(entry, fmt.Sprintf("Failed to create Discord session: %v", err))
+		gui.AppendAnalysisText(rt, fmt.Sprintf("Failed to create Discord session: %v", err))
 		return
 	}
 
@@ -56,16 +56,16 @@ func initialiseDiscord(cfg *internal.Config, token string, entry *widget.Entry) 
 		discordgo.IntentMessageContent
 
 	discord.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		gui.AppendAnalysisText(entry, "Bot is running! Fetching messages...")
-		text, err := tasks.AnalyzeLastMessages(cfg.Bot.AnalyzeLastXMessages, s, cfg)
+		gui.AppendAnalysisText(rt, "Bot is running! Fetching messages...")
+		entries, err := tasks.AnalyzeLastMessages(cfg.Bot.AnalyzeLastXMessages, s, cfg)
 		if err != nil {
-			gui.AppendAnalysisText(entry, fmt.Sprintf("Failed to analyze messages: %v", err))
+			gui.AppendAnalysisText(rt, fmt.Sprintf("Failed to analyze messages: %v", err))
 			return
 		}
-		gui.AppendAnalysisText(entry, text)
+		gui.AppendAnalysisEntries(rt, entries)
 	})
 
 	if err := discord.Open(); err != nil {
-		gui.AppendAnalysisText(entry, fmt.Sprintf("Failed to open Discord session: %v", err))
+		gui.AppendAnalysisText(rt, fmt.Sprintf("Failed to open Discord session: %v", err))
 	}
 }

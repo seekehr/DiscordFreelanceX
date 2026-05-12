@@ -2,17 +2,23 @@ package gui
 
 import (
 	"image/color"
+	"net/url"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"github.com/seekehr/DiscordFreelanceX/internal"
 )
 
 type forcedDarkTheme struct{}
 
 func (t *forcedDarkTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Color {
+	if name == theme.ColorNameForeground {
+		return color.White
+	}
 	return theme.DefaultTheme().Color(name, theme.VariantDark)
 }
 
@@ -34,27 +40,65 @@ func CreateApp() fyne.App {
 	return a
 }
 
-func CreateAnalysisWindow(a fyne.App) (fyne.Window, *widget.Entry) {
+func CreateAnalysisWindow(a fyne.App) (fyne.Window, *widget.RichText) {
 	w := a.NewWindow("DiscordFreelanceX — Message Analysis")
 	w.Resize(fyne.NewSize(1000, 700))
 	w.CenterOnScreen()
 
-	entry := widget.NewMultiLineEntry()
-	entry.Wrapping = fyne.TextWrapWord
-	entry.TextStyle = fyne.TextStyle{Monospace: true}
-	entry.SetText("Connecting to Discord and loading messages...")
-	entry.Disable()
+	rt := widget.NewRichText(
+		&widget.TextSegment{
+			Text: "Connecting to Discord and loading messages...\n",
+			Style: widget.RichTextStyle{
+				ColorName: theme.ColorNameForeground,
+				TextStyle: fyne.TextStyle{Monospace: true},
+			},
+		},
+	)
+	rt.Wrapping = fyne.TextWrapWord
 
-	w.SetContent(container.NewPadded(entry))
-	return w, entry
+	scroll := container.NewVScroll(rt)
+	w.SetContent(scroll)
+	return w, rt
 }
 
-func AppendAnalysisText(entry *widget.Entry, text string) {
+func AppendAnalysisText(rt *widget.RichText, text string) {
 	fyne.Do(func() {
-		current := entry.Text
-		if current != "" {
-			current += "\n"
+		rt.Segments = append(rt.Segments, &widget.TextSegment{
+			Text: text + "\n",
+			Style: widget.RichTextStyle{
+				ColorName: theme.ColorNameForeground,
+				TextStyle: fyne.TextStyle{Monospace: true},
+			},
+		})
+		rt.Refresh()
+	})
+}
+
+func AppendAnalysisEntries(rt *widget.RichText, entries []internal.AnalysisEntry) {
+	fyne.Do(func() {
+		for _, e := range entries {
+			rt.Segments = append(rt.Segments, &widget.TextSegment{
+				Text: e.Text + " ",
+				Style: widget.RichTextStyle{
+					ColorName: theme.ColorNameForeground,
+					TextStyle: fyne.TextStyle{Monospace: true},
+					Inline:    true,
+				},
+			})
+
+			if e.MessageURL != "" {
+				u, _ := url.Parse(e.MessageURL)
+				rt.Segments = append(rt.Segments, &widget.HyperlinkSegment{
+					Text: "Go to message",
+					URL:  u,
+				})
+			}
+
+			rt.Segments = append(rt.Segments, &widget.TextSegment{
+				Text:  "\n",
+				Style: widget.RichTextStyle{},
+			})
 		}
-		entry.SetText(current + text)
+		rt.Refresh()
 	})
 }
