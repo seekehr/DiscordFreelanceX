@@ -6,6 +6,8 @@ A lightweight Discord tool built in Go that helps freelancers stay on top of job
 
 ## Features
 
+- **Tab Support** -- Tabs for each server for quick browsing.
+- **Keyword Support** -- Use keywords to only select relevant job offerings ;D.
 - **Multi-server message scanning** -- Fetches and displays the most recent messages from any number of guilds and channels, sorted newest-first.
 - **Accept new messages and immediately links to them** -- Displays any new messages instantly with a notification so you are never late to applying for a job.
 - **Forum channel support** -- Many such tools do not support forums, but this bot does!

@@ -35,6 +35,10 @@ func AcceptNewMessages(s *discordgo.Session, cfg *internal.Config, a fyne.App, r
 			}
 		}
 
+		if !containsKeyword(content, cfg.Bot.Keywords) {
+			return
+		}
+
 		channelName := utils.GetChannelNameFromID(s, m.ChannelID)
 		messageURL := fmt.Sprintf("https://discord.com/channels/%s/%s/%s", guildID, m.ChannelID, m.ID)
 
@@ -57,6 +61,9 @@ func AcceptNewMessages(s *discordgo.Session, cfg *internal.Config, a fyne.App, r
 		}
 
 		content := parsers.ParseForumPost(s, tc.Channel)
+		if !containsKeyword(content, cfg.Bot.Keywords) {
+			return
+		}
 		threadURL := fmt.Sprintf("https://discord.com/channels/%s/%s", guildID, tc.ID)
 		forumName := utils.GetChannelNameFromID(s, tc.ParentID)
 

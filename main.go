@@ -6,13 +6,13 @@ import (
 	"os"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/widget"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 
 	"github.com/seekehr/DiscordFreelanceX/internal"
 	"github.com/seekehr/DiscordFreelanceX/internal/gui"
 	"github.com/seekehr/DiscordFreelanceX/internal/tasks"
+	"github.com/seekehr/DiscordFreelanceX/internal/utils"
 )
 
 func main() {
@@ -25,9 +25,9 @@ func main() {
 	token := initaliseEnv()
 
 	guiApp := gui.CreateApp()
-	window, rt := gui.CreateAnalysisWindow(guiApp)
+	window, td := gui.CreateTabbedWindow(guiApp, cfg)
 
-	go initialiseDiscord(cfg, token, guiApp, rt)
+	go initialiseDiscord(cfg, token, guiApp, td)
 
 	window.ShowAndRun()
 }
@@ -48,11 +48,11 @@ func initaliseEnv() string {
 }
 
 // initialiseDiscord opens a Discord session in the background, and on ready
-// fetches messages and pushes the results into the GUI's RichText widget.
-func initialiseDiscord(cfg *internal.Config, token string, a fyne.App, rt *widget.RichText) {
+// fetches messages per guild tab and sets up real-time handlers on the "New" tab.
+func initialiseDiscord(cfg *internal.Config, token string, a fyne.App, td *gui.TabbedDisplay) {
 	discord, err := discordgo.New(token)
 	if err != nil {
-		gui.AppendAnalysisText(rt, fmt.Sprintf("Failed to create Discord session: %v", err))
+		gui.AppendAnalysisText(td.NewRT, fmt.Sprintf("Failed to create Discord session: %v", err))
 		return
 	}
 
@@ -61,19 +61,29 @@ func initialiseDiscord(cfg *internal.Config, token string, a fyne.App, rt *widge
 		discordgo.IntentMessageContent
 
 	discord.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		gui.AppendAnalysisText(rt, "Bot is running! Fetching messages...")
-		entries, err := tasks.AnalyzeLastMessages(cfg.Bot.AnalyzeLastXMessages, s, cfg)
+		for _, server := range cfg.Servers {
+			name := utils.GetGuildNameFromID(s, server.GuildID)
+			td.RenameGuildTab(server.GuildID, name)
+		}
+
+		perGuild, err := tasks.AnalyzeLastMessages(cfg.Bot.AnalyzeLastXMessages, s, cfg)
 		if err != nil {
-			gui.AppendAnalysisText(rt, fmt.Sprintf("Failed to analyze messages: %v", err))
+			gui.AppendAnalysisText(td.NewRT, fmt.Sprintf("Failed to analyze messages: %v", err))
 			return
 		}
-		gui.AppendAnalysisEntries(rt, entries)
-		gui.AppendAnalysisText(rt, "====================NEW MESSAGES====================")
-		tasks.AcceptNewMessages(s, cfg, a, rt)
+
+		for guildID, entries := range perGuild {
+			if rt, ok := td.GuildRTs[guildID]; ok {
+				gui.AppendAnalysisEntries(rt, entries)
+			}
+		}
+
+		gui.AppendAnalysisText(td.NewRT, "Listening for new messages...")
+		tasks.AcceptNewMessages(s, cfg, a, td.NewRT)
 	})
 
 	if err := discord.Open(); err != nil {
-		gui.AppendAnalysisText(rt, fmt.Sprintf("Failed to open Discord session: %v", err))
+		gui.AppendAnalysisText(td.NewRT, fmt.Sprintf("Failed to open Discord session: %v", err))
 	}
 	tasks.SendMessages(discord, cfg)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/seekehr/DiscordFreelanceX/internal"
@@ -13,18 +14,13 @@ import (
 )
 
 // AnalyzeLastMessages fetches the most recent messages from every configured
-// channel and returns them as structured AnalysisEntry slices, sorted newest-first.
+// channel and returns them keyed by guild ID, sorted newest-first per channel.
 // Forum channels are handled separately by fetching their active threads.
-// Guild and channel sections are separated by visual dividers.
-func AnalyzeLastMessages(numberofmessages int, s *discordgo.Session, cfg *internal.Config) ([]internal.AnalysisEntry, error) {
-	var entries []internal.AnalysisEntry
+func AnalyzeLastMessages(numberofmessages int, s *discordgo.Session, cfg *internal.Config) (map[string][]internal.AnalysisEntry, error) {
+	result := make(map[string][]internal.AnalysisEntry, len(cfg.Servers))
 
-	for i, server := range cfg.Servers {
-		if i > 0 {
-			entries = append(entries, internal.AnalysisEntry{
-				Text: "============================",
-			})
-		}
+	for _, server := range cfg.Servers {
+		var entries []internal.AnalysisEntry
 
 		guildName := utils.GetGuildNameFromID(s, server.GuildID)
 		entries = append(entries, internal.AnalysisEntry{
@@ -47,17 +43,19 @@ func AnalyzeLastMessages(numberofmessages int, s *discordgo.Session, cfg *intern
 			}
 
 			if ch.Type == discordgo.ChannelTypeGuildForum {
-				entries = append(entries, analyzeForumChannel(s, server.GuildID, ch, numberofmessages)...)
+				entries = append(entries, analyzeForumChannel(s, server.GuildID, ch, numberofmessages, cfg.Bot.Keywords)...)
 			} else {
-				entries = append(entries, analyzeTextChannel(s, server.GuildID, channelID, numberofmessages)...)
+				entries = append(entries, analyzeTextChannel(s, server.GuildID, channelID, numberofmessages, cfg.Bot.Keywords)...)
 			}
 		}
+
+		result[server.GuildID] = entries
 	}
 
-	return entries, nil
+	return result, nil
 }
 
-func analyzeTextChannel(s *discordgo.Session, guildID, channelID string, limit int) []internal.AnalysisEntry {
+func analyzeTextChannel(s *discordgo.Session, guildID, channelID string, limit int, keywords []string) []internal.AnalysisEntry {
 	var entries []internal.AnalysisEntry
 
 	channelName := utils.GetChannelNameFromID(s, channelID)
@@ -86,6 +84,10 @@ func analyzeTextChannel(s *discordgo.Session, guildID, channelID string, limit i
 			}
 		}
 
+		if !containsKeyword(content, keywords) {
+			continue
+		}
+
 		messageURL := fmt.Sprintf("https://discord.com/channels/%s/%s/%s", guildID, channelID, msg.ID)
 		entries = append(entries, internal.AnalysisEntry{
 			Text:       fmt.Sprintf("[%s]: %s", msg.Author.Username, content),
@@ -96,7 +98,7 @@ func analyzeTextChannel(s *discordgo.Session, guildID, channelID string, limit i
 	return entries
 }
 
-func analyzeForumChannel(s *discordgo.Session, guildID string, forum *discordgo.Channel, limit int) []internal.AnalysisEntry {
+func analyzeForumChannel(s *discordgo.Session, guildID string, forum *discordgo.Channel, limit int, keywords []string) []internal.AnalysisEntry {
 	var entries []internal.AnalysisEntry
 
 	channelName := "#" + forum.Name
@@ -113,6 +115,9 @@ func analyzeForumChannel(s *discordgo.Session, guildID string, forum *discordgo.
 
 	for _, thread := range forumThreads {
 		content := parsers.ParseForumPost(s, thread)
+		if !containsKeyword(content, keywords) {
+			continue
+		}
 		threadURL := fmt.Sprintf("https://discord.com/channels/%s/%s", guildID, thread.ID)
 		entries = append(entries, internal.AnalysisEntry{
 			Text:       content,
@@ -123,9 +128,25 @@ func analyzeForumChannel(s *discordgo.Session, guildID string, forum *discordgo.
 	return entries
 }
 
+func containsKeyword(text string, keywords []string) bool {
+	if len(keywords) == 0 {
+		return true
+	}
+	lower := strings.ToLower(text)
+	for _, kw := range keywords {
+		if strings.Contains(lower, strings.ToLower(kw)) {
+			return true
+		}
+	}
+	return false
+}
+
 // fetchForumThreads uses the user-facing thread search endpoint
 // (works with both user and bot tokens, unlike GuildThreadsActive).
 func fetchForumThreads(s *discordgo.Session, forumChannelID string, limit int) ([]*discordgo.Channel, error) {
+	if limit > 25 {
+		limit = 25
+	}
 	endpoint := discordgo.EndpointChannel(forumChannelID) +
 		"/threads/search?sort_by=last_message_time&sort_order=desc&limit=" +
 		strconv.Itoa(limit)

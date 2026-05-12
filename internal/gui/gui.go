@@ -14,6 +14,15 @@ import (
 	"github.com/seekehr/DiscordFreelanceX/internal"
 )
 
+// TabbedDisplay holds the per-guild and "New" tab RichText widgets
+// so callers can direct output to the appropriate tab.
+type TabbedDisplay struct {
+	NewRT    *widget.RichText
+	GuildRTs map[string]*widget.RichText
+	Tabs     *container.AppTabs
+	guildTab map[string]*container.TabItem
+}
+
 // forcedDarkTheme wraps Fyne's default theme but always returns dark-variant
 // colours, with the foreground forced to pure white for readability.
 type forcedDarkTheme struct{}
@@ -44,17 +53,53 @@ func CreateApp() fyne.App {
 	return a
 }
 
-// CreateAnalysisWindow builds the main output window containing a scrollable
-// RichText widget. Returns the window and the RichText so callers can append
-// content later via AppendAnalysisText / AppendAnalysisEntries.
-func CreateAnalysisWindow(a fyne.App) (fyne.Window, *widget.RichText) {
-	w := a.NewWindow("DiscordFreelanceX — Message Analysis")
+// CreateTabbedWindow builds the main window with a tab bar: a "New" tab for
+// incoming real-time messages, plus one tab per configured guild for historical
+// analysis results.
+func CreateTabbedWindow(a fyne.App, cfg *internal.Config) (fyne.Window, *TabbedDisplay) {
+	w := a.NewWindow("DiscordFreelanceX — Made by @seekehr")
 	w.Resize(fyne.NewSize(1000, 700))
 	w.CenterOnScreen()
 
+	td := &TabbedDisplay{
+		GuildRTs: make(map[string]*widget.RichText, len(cfg.Servers)),
+		guildTab: make(map[string]*container.TabItem, len(cfg.Servers)),
+	}
+
+	newRT := newRichText("Waiting for new messages...\n")
+	td.NewRT = newRT
+	newTab := container.NewTabItem("New", container.NewVScroll(newRT))
+
+	tabs := container.NewAppTabs(newTab)
+	tabs.SetTabLocation(container.TabLocationTop)
+
+	for _, server := range cfg.Servers {
+		rt := newRichText("Connecting to Discord...\n")
+		td.GuildRTs[server.GuildID] = rt
+		tab := container.NewTabItem(server.GuildID, container.NewVScroll(rt))
+		td.guildTab[server.GuildID] = tab
+		tabs.Append(tab)
+	}
+
+	td.Tabs = tabs
+	w.SetContent(tabs)
+	return w, td
+}
+
+// RenameGuildTab updates a guild tab's title (e.g. once the guild name is resolved).
+func (td *TabbedDisplay) RenameGuildTab(guildID, name string) {
+	fyne.Do(func() {
+		if tab, ok := td.guildTab[guildID]; ok {
+			tab.Text = name
+			td.Tabs.Refresh()
+		}
+	})
+}
+
+func newRichText(initialText string) *widget.RichText {
 	rt := widget.NewRichText(
 		&widget.TextSegment{
-			Text: "Connecting to Discord and loading messages...\n",
+			Text: initialText,
 			Style: widget.RichTextStyle{
 				ColorName: theme.ColorNameForeground,
 				TextStyle: fyne.TextStyle{Monospace: true},
@@ -62,10 +107,7 @@ func CreateAnalysisWindow(a fyne.App) (fyne.Window, *widget.RichText) {
 		},
 	)
 	rt.Wrapping = fyne.TextWrapWord
-
-	scroll := container.NewVScroll(rt)
-	w.SetContent(scroll)
-	return w, rt
+	return rt
 }
 
 // AppendAnalysisText adds a plain white monospace line to the RichText widget.
