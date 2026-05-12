@@ -1,4 +1,4 @@
-package tasks
+package parsers
 
 import (
 	"fmt"

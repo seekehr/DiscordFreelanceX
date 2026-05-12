@@ -1,9 +1,15 @@
 bot:
   message: "High-performance backend engineer specializing in scalable systems, AI-powered applications, and crypto infrastructure. I build fast, secure, and production-ready solutions using Go, Node.js, PHP, React, and modern cloud technologies — from low-latency APIs and real-time systems to AI automations, blockchain integrations, and custom SaaS platforms. Focused on clean architecture, performance optimization, and delivering systems that scale reliably under heavy load. DM me now to book yourself, and feel free to check out my portfolio in my bio."
-  analyze-last-x-messages: 20
+  analyze-last-x-messages: 10
 
 servers:
   - guild_id: "539258061081018378"
     channel_ids:
       - "552499537210638336"
+  - guild_id: "1002522561613135892"
+    channel_ids:
+      - "1355696280969412649"
+      - "1355696300993151248"
+      - "1355696414507925566"
+
     
