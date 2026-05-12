@@ -3,6 +3,7 @@ package tasks
 import (
 	"fmt"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/bwmarrin/discordgo"
@@ -14,7 +15,8 @@ import (
 
 // AcceptNewMessages registers handlers that display incoming messages and
 // new forum posts from all configured channels in the GUI's RichText widget.
-func AcceptNewMessages(s *discordgo.Session, cfg *internal.Config, rt *widget.RichText) {
+// Each incoming event also triggers a Windows toast notification.
+func AcceptNewMessages(s *discordgo.Session, cfg *internal.Config, a fyne.App, rt *widget.RichText) {
 	watched := buildWatchedChannels(cfg)
 
 	s.AddHandler(func(_ *discordgo.Session, m *discordgo.MessageCreate) {
@@ -36,9 +38,13 @@ func AcceptNewMessages(s *discordgo.Session, cfg *internal.Config, rt *widget.Ri
 		channelName := utils.GetChannelNameFromID(s, m.ChannelID)
 		messageURL := fmt.Sprintf("https://discord.com/channels/%s/%s/%s", guildID, m.ChannelID, m.ID)
 
+		title := fmt.Sprintf("New message in %s", channelName)
+		line := fmt.Sprintf("[%s]: %s", m.Author.Username, content)
+
 		gui.AppendAnalysisEntries(rt, []internal.AnalysisEntry{
-			{Text: fmt.Sprintf("NEW in %s | [%s]: %s", channelName, m.Author.Username, content), MessageURL: messageURL},
+			{Text: fmt.Sprintf("NEW in %s | %s", channelName, line), MessageURL: messageURL},
 		})
+		utils.Notify(a, title, line)
 	})
 
 	s.AddHandler(func(_ *discordgo.Session, tc *discordgo.ThreadCreate) {
@@ -57,6 +63,7 @@ func AcceptNewMessages(s *discordgo.Session, cfg *internal.Config, rt *widget.Ri
 		gui.AppendAnalysisEntries(rt, []internal.AnalysisEntry{
 			{Text: fmt.Sprintf("NEW POST in %s | %s", forumName, content), MessageURL: threadURL},
 		})
+		utils.Notify(a, fmt.Sprintf("New forum post in %s", forumName), content)
 	})
 }
 

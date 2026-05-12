@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -26,7 +27,7 @@ func main() {
 	guiApp := gui.CreateApp()
 	window, rt := gui.CreateAnalysisWindow(guiApp)
 
-	go initialiseDiscord(cfg, token, rt)
+	go initialiseDiscord(cfg, token, guiApp, rt)
 
 	window.ShowAndRun()
 }
@@ -48,7 +49,7 @@ func initaliseEnv() string {
 
 // initialiseDiscord opens a Discord session in the background, and on ready
 // fetches messages and pushes the results into the GUI's RichText widget.
-func initialiseDiscord(cfg *internal.Config, token string, rt *widget.RichText) {
+func initialiseDiscord(cfg *internal.Config, token string, a fyne.App, rt *widget.RichText) {
 	discord, err := discordgo.New(token)
 	if err != nil {
 		gui.AppendAnalysisText(rt, fmt.Sprintf("Failed to create Discord session: %v", err))
@@ -68,7 +69,7 @@ func initialiseDiscord(cfg *internal.Config, token string, rt *widget.RichText) 
 		}
 		gui.AppendAnalysisEntries(rt, entries)
 		gui.AppendAnalysisText(rt, "====================NEW MESSAGES====================")
-		tasks.AcceptNewMessages(s, cfg, rt)
+		tasks.AcceptNewMessages(s, cfg, a, rt)
 	})
 
 	if err := discord.Open(); err != nil {

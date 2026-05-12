@@ -16,6 +16,7 @@ type Config struct {
 // BotConfig holds bot-specific settings such as the auto-reply message
 // and the number of messages to fetch per channel.
 type BotConfig struct {
+	ForumTitle           string `yaml:"forum-title"`
 	Message              string `yaml:"message"`
 	AnalyzeLastXMessages int    `yaml:"analyze-last-x-messages"`
 }

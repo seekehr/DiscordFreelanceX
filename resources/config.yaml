@@ -1,4 +1,5 @@
 bot:
+  forum-title: "High-performance backend engineer, AI Developer, and Crypto Expert!"
   message: "High-performance backend engineer specializing in scalable systems, AI-powered applications, and crypto infrastructure. I build fast, secure, and production-ready solutions using Go, Node.js, PHP, React, and modern cloud technologies — from low-latency APIs and real-time systems to AI automations, blockchain integrations, and custom SaaS platforms. Focused on clean architecture, performance optimization, and delivering systems that scale reliably under heavy load. DM me now to book yourself, and feel free to check out my portfolio in my bio."
   analyze-last-x-messages: 10
 
