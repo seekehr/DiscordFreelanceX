@@ -1,8 +1,9 @@
 bot:
   message: "DM me for your freelancing projects!"
+  analyze-last-x-messages: 50
 
 servers:
-  - guild_id: ""
+  - guild_id: "539258061081018378"
     channel_ids:
-      - ""
+      - "552499537210638336"
     

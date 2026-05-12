@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
-	"syscall"
 
+	"fyne.io/fyne/v2/widget"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 
 	"github.com/seekehr/DiscordFreelanceX/internal"
+	"github.com/seekehr/DiscordFreelanceX/internal/gui"
+	"github.com/seekehr/DiscordFreelanceX/internal/tasks"
 )
 
 func main() {
@@ -19,35 +20,52 @@ func main() {
 		log.Fatal("failed to load config: ", err)
 	}
 	fmt.Println("Config loaded successfully")
-	_ = cfg
 
+	token := initaliseEnv()
+
+	guiApp := gui.CreateApp()
+	window, entry := gui.CreateAnalysisWindow(guiApp)
+
+	go initialiseDiscord(cfg, token, entry)
+
+	window.ShowAndRun()
+}
+
+func initaliseEnv() string {
 	if err := godotenv.Load(); err != nil {
-		log.Fatal("failed to load .env file: ", err)
+		panic(fmt.Sprintf("failed to load .env file: %v", err))
 	}
 
 	token := os.Getenv("TOKEN")
 	if token == "" {
-		log.Fatal("TOKEN is not set in .env")
+		panic("TOKEN is not set in .env")
 	}
 
-	fmt.Println("Token loaded successfully")
+	return token
+}
+
+func initialiseDiscord(cfg *internal.Config, token string, entry *widget.Entry) {
 	discord, err := discordgo.New(token)
 	if err != nil {
-		log.Fatal("failed to create Discord session: ", err)
+		gui.AppendAnalysisText(entry, fmt.Sprintf("Failed to create Discord session: %v", err))
+		return
 	}
 
+	discord.Identify.Intents = discordgo.IntentsGuilds |
+		discordgo.IntentsGuildMessages |
+		discordgo.IntentMessageContent
+
 	discord.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		fmt.Println("Bot is running!")
+		gui.AppendAnalysisText(entry, "Bot is running! Fetching messages...")
+		text, err := tasks.AnalyzeLastMessages(cfg.Bot.AnalyzeLastXMessages, s, cfg)
+		if err != nil {
+			gui.AppendAnalysisText(entry, fmt.Sprintf("Failed to analyze messages: %v", err))
+			return
+		}
+		gui.AppendAnalysisText(entry, text)
 	})
 
 	if err := discord.Open(); err != nil {
-		log.Fatal("failed to open Discord session: ", err)
+		gui.AppendAnalysisText(entry, fmt.Sprintf("Failed to open Discord session: %v", err))
 	}
-	defer discord.Close()
-
-	fmt.Println("Press Ctrl+C to exit")
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	<-sig
-	fmt.Println("Shutting down...")
 }

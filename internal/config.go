@@ -13,7 +13,8 @@ type Config struct {
 }
 
 type BotConfig struct {
-	Message string `yaml:"message"`
+	Message              string `yaml:"message"`
+	AnalyzeLastXMessages int    `yaml:"analyze-last-x-messages"`
 }
 
 type ServerConfig struct {
