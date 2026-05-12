@@ -2,12 +2,16 @@ package tasks
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/seekehr/DiscordFreelanceX/internal"
 	"github.com/seekehr/DiscordFreelanceX/internal/utils"
 )
 
+// AnalyzeLastMessages fetches the most recent messages from every configured
+// channel and returns them as structured AnalysisEntry slices, sorted newest-first.
+// Guild and channel sections are separated by visual dividers.
 func AnalyzeLastMessages(numberofmessages int, s *discordgo.Session, cfg *internal.Config) ([]internal.AnalysisEntry, error) {
 	var entries []internal.AnalysisEntry
 
@@ -39,6 +43,10 @@ func AnalyzeLastMessages(numberofmessages int, s *discordgo.Session, cfg *intern
 				continue
 			}
 
+			sort.Slice(messages, func(a, b int) bool {
+				return messages[a].ID > messages[b].ID
+			})
+
 			entries = append(entries, internal.AnalysisEntry{
 				Text: fmt.Sprintf("%s: fetched %d messages", channelName, len(messages)),
 			})
@@ -55,7 +63,7 @@ func AnalyzeLastMessages(numberofmessages int, s *discordgo.Session, cfg *intern
 
 				messageURL := fmt.Sprintf("https://discord.com/channels/%s/%s/%s", server.GuildID, channelID, msg.ID)
 				entries = append(entries, internal.AnalysisEntry{
-					Text:       fmt.Sprintf("[%s] %s: %s", msg.Author.Username, content),
+					Text:       fmt.Sprintf("[%s]: %s", msg.Author.Username, content),
 					MessageURL: messageURL,
 				})
 			}

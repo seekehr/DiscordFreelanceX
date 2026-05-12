@@ -7,6 +7,9 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+// ParseEmbed extracts the readable text parts of a Discord embed
+// (author, title, description, fields, footer) and joins them with " | ".
+// Returns "[empty embed]" when no text content is found.
 func ParseEmbed(embed *discordgo.MessageEmbed) string {
 	var parts []string
 

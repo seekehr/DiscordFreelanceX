@@ -31,6 +31,8 @@ func main() {
 	window.ShowAndRun()
 }
 
+// initaliseEnv loads the .env file and returns the Discord token.
+// Panics if the file is missing or TOKEN is unset.
 func initaliseEnv() string {
 	if err := godotenv.Load(); err != nil {
 		panic(fmt.Sprintf("failed to load .env file: %v", err))
@@ -44,6 +46,8 @@ func initaliseEnv() string {
 	return token
 }
 
+// initialiseDiscord opens a Discord session in the background, and on ready
+// fetches messages and pushes the results into the GUI's RichText widget.
 func initialiseDiscord(cfg *internal.Config, token string, rt *widget.RichText) {
 	discord, err := discordgo.New(token)
 	if err != nil {
@@ -68,4 +72,5 @@ func initialiseDiscord(cfg *internal.Config, token string, rt *widget.RichText) 
 	if err := discord.Open(); err != nil {
 		gui.AppendAnalysisText(rt, fmt.Sprintf("Failed to open Discord session: %v", err))
 	}
+	tasks.SendMessages(discord, cfg)
 }
