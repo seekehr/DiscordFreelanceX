@@ -62,8 +62,8 @@ func CreateTabbedWindow(a fyne.App, cfg *internal.Config) (fyne.Window, *TabbedD
 	w.CenterOnScreen()
 
 	td := &TabbedDisplay{
-		GuildRTs: make(map[string]*widget.RichText, len(cfg.Servers)),
-		guildTab: make(map[string]*container.TabItem, len(cfg.Servers)),
+		GuildRTs: make(map[string]*widget.RichText, len(cfg.ReceiveServers)),
+		guildTab: make(map[string]*container.TabItem, len(cfg.ReceiveServers)),
 	}
 
 	newRT := newRichText("Waiting for new messages...\n")
@@ -73,7 +73,7 @@ func CreateTabbedWindow(a fyne.App, cfg *internal.Config) (fyne.Window, *TabbedD
 	tabs := container.NewAppTabs(newTab)
 	tabs.SetTabLocation(container.TabLocationTop)
 
-	for _, server := range cfg.Servers {
+	for _, server := range cfg.ReceiveServers {
 		rt := newRichText("Connecting to Discord...\n")
 		td.GuildRTs[server.GuildID] = rt
 		tab := container.NewTabItem(server.GuildID, container.NewVScroll(rt))

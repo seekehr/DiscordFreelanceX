@@ -17,9 +17,9 @@ import (
 // channel and returns them keyed by guild ID, sorted newest-first per channel.
 // Forum channels are handled separately by fetching their active threads.
 func AnalyzeLastMessages(numberofmessages int, s *discordgo.Session, cfg *internal.Config) (map[string][]internal.AnalysisEntry, error) {
-	result := make(map[string][]internal.AnalysisEntry, len(cfg.Servers))
+	result := make(map[string][]internal.AnalysisEntry, len(cfg.ReceiveServers))
 
-	for _, server := range cfg.Servers {
+	for _, server := range cfg.ReceiveServers {
 		var entries []internal.AnalysisEntry
 
 		guildName := utils.GetGuildNameFromID(s, server.GuildID)

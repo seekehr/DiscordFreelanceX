@@ -61,7 +61,7 @@ func initialiseDiscord(cfg *internal.Config, token string, a fyne.App, td *gui.T
 		discordgo.IntentMessageContent
 
 	discord.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		for _, server := range cfg.Servers {
+		for _, server := range cfg.ReceiveServers {
 			name := utils.GetGuildNameFromID(s, server.GuildID)
 			td.RenameGuildTab(server.GuildID, name)
 		}

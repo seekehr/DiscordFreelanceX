@@ -29,7 +29,7 @@ func SendMessages(s *discordgo.Session, cfg *internal.Config) int {
 	channels := 0
 	guilds := 0
 
-	for _, server := range cfg.Servers {
+	for _, server := range cfg.SendServers {
 		guildName := utils.GetGuildNameFromID(s, server.GuildID)
 		guildSent := 0
 

@@ -9,8 +9,9 @@ import (
 
 // Config is the top-level application configuration loaded from YAML.
 type Config struct {
-	Bot     BotConfig      `yaml:"bot"`
-	Servers []ServerConfig `yaml:"servers"`
+	Bot            BotConfig      `yaml:"bot"`
+	SendServers    []ServerConfig `yaml:"send_servers"`
+	ReceiveServers []ServerConfig `yaml:"receive_servers"`
 }
 
 // BotConfig holds bot-specific settings such as the auto-reply message

@@ -76,8 +76,8 @@ func AcceptNewMessages(s *discordgo.Session, cfg *internal.Config, a fyne.App, r
 
 // buildWatchedChannels creates a channelID -> guildID lookup from the config.
 func buildWatchedChannels(cfg *internal.Config) map[string]string {
-	m := make(map[string]string, len(cfg.Servers)*4)
-	for _, server := range cfg.Servers {
+	m := make(map[string]string, len(cfg.ReceiveServers)*4)
+	for _, server := range cfg.ReceiveServers {
 		for _, ch := range server.ChannelIDs {
 			m[ch] = server.GuildID
 		}
